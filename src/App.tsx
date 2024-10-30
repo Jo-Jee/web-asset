@@ -2,19 +2,35 @@ import { useEffect, useState } from 'react'
 import { assetAPI } from './utils/API'
 import { Item } from './interfaces/Item'
 import { Group } from './interfaces/group'
+import { GroupRatio } from './interfaces/groupRatio'
 
 function App() {
   const [groups, setGroups] = useState<Group[]>([])
-  const [monthlyTotal, setMonthlyTotal] = useState<number[]>([])
+  const [monthlyTotal, setMonthlyTotal] = useState<Map<string, number>[]>([])
 
   useEffect(() => {
-    fetchGroups()
+    fetchData()
 
-    async function fetchGroups() {
-      const res = await assetAPI.get<Group[]>('/items/groups')
-      const monthlyTotal: number[] = new Array(12).fill(0)
+    async function fetchData() {
+      const rationesRes = await assetAPI.get<GroupRatio[]>(
+        '/items/groups/rationes'
+      )
 
-      const groups = res.data
+      const groupRes = await assetAPI.get<Group[]>('/items/groups')
+      const monthlyTotal: Map<string, number>[] = new Array(12)
+        .fill(null)
+        .map(
+          (_) =>
+            new Map<string, number>([
+              ['total', 0],
+              ...groupRes.data.map<[string, number]>((group) => [
+                group.name,
+                0,
+              ]),
+            ])
+        )
+
+      const groups = groupRes.data
         .sort((a, b) => a.id - b.id)
         .map((group) => {
           const tunedItems: Item[] = group.items.map((item) => {
@@ -25,9 +41,15 @@ function App() {
               )
 
               if (record) {
-                tunedItem.balances[month] = record.price * record.quantity
-                monthlyTotal[month] =
-                  monthlyTotal[month] + tunedItem.balances[month]
+                const total = monthlyTotal[month]
+                const balance = record.price * record.quantity
+
+                tunedItem.balances[month] = balance
+                total.set(
+                  'total',
+                  total.get('total') + tunedItem.balances[month]
+                )
+                total.set(group.name, total.get(group.name)! + balance)
               }
             })
 
@@ -52,7 +74,10 @@ function App() {
         {groups.map((group) => (
           <GroupColumn key={group.id} group={group} />
         ))}
-        <Column title="계" contents={monthlyTotal} />
+        <Column
+          title="계"
+          contents={monthlyTotal.map((total) => total.get('total') || 0)}
+        />
       </div>
       <RatioTable />
     </div>
