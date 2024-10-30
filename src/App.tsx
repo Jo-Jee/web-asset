@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { assetAPI } from './utils/API'
 import { Item } from './interfaces/Item'
-import { Record } from './interfaces/record'
 
 function App() {
   const [items, setItems] = useState<Item[]>([])
@@ -37,17 +36,26 @@ function App() {
   }, [])
 
   return (
-    <div className="flex m-4">
-      <Column
-        title="월"
-        contents={new Array(12).fill(null).map((_, i) => i + 1)}
-      />
-      {items.map((item) => (
-        <Column title={item.name} contents={item.balances!} />
-      ))}
-      <Column title="계" contents={monthlyTotal} />
+    <div className="flex p-4 space-y-4">
+      <div className="flex">
+        <Column
+          title="월"
+          contents={new Array(12).fill(null).map((_, i) => i + 1)}
+        />
+        {items.map((item) => (
+          <Column title={item.name} contents={item.balances!} />
+        ))}
+        <Column title="계" contents={monthlyTotal} />
+      </div>
+      <RatioTable />
     </div>
   )
+}
+
+function RatioTable() {
+  const [rationes, setRationes] = useState()
+  useEffect(() => {}, [])
+  return <div>RatioTable</div>
 }
 
 function Column({
