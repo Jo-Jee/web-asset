@@ -114,7 +114,7 @@ function GroupColumn({ group }: { group: ProcessedGroup }) {
           <Column
             key={item.id}
             title={item.name}
-            contents={item.balances!}
+            contents={item.balances}
             parent
           />
         ))}
@@ -139,7 +139,7 @@ function Column({
       <div className="text-center bg-gray-200 p-2 font-bold px-4">{title}</div>
       {contents.map((content, i) => (
         <div key={i} className="text-right odd:bg-gray-200 px-4">
-          {content}
+          {content.toLocaleString()}
         </div>
       ))}
     </div>
