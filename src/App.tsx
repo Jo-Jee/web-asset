@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react'
-import { assetAPI } from './utils/API'
-import { Item } from './interfaces/Item'
 import { Group } from './interfaces/group'
 import { GroupRatio } from './interfaces/groupRatio'
+import { assetAPI } from './utils/API'
+
+interface ProcessedItem {
+  id: number
+  name: string
+  prices: number[]
+  balances: number[]
+}
+
+interface ProcessedGroup {
+  id: number
+  name: string
+  items: ProcessedItem[]
+}
 
 function App() {
-  const [groups, setGroups] = useState<Group[]>([])
+  const [groups, setGroups] = useState<ProcessedGroup[]>([])
   const [monthlyTotal, setMonthlyTotal] = useState<Map<string, number>[]>([])
 
   useEffect(() => {
@@ -33,30 +45,33 @@ function App() {
       const groups = groupRes.data
         .sort((a, b) => a.id - b.id)
         .map((group) => {
-          const tunedItems: Item[] = group.items.map((item) => {
-            const tunedItem = { ...item, balances: new Array(12).fill(0) }
-            tunedItem.balances.forEach((_, month) => {
-              const record = item.records.find(
-                (record) => record.month === month + 1
-              )
+          const groupItems: ProcessedItem[] = group.items.map((item) => {
+            const groupItem: ProcessedItem = {
+              id: item.id,
+              name: item.name,
+              prices: new Array(12).fill(0),
+              balances: new Array(12).fill(0),
+            }
 
-              if (record) {
-                const total = monthlyTotal[month]
-                const balance = record.price * record.quantity
-
-                tunedItem.balances[month] = balance
-                total.set(
-                  'total',
-                  total.get('total') + tunedItem.balances[month]
-                )
-                total.set(group.name, total.get(group.name)! + balance)
-              }
+            item.prices.forEach((price) => {
+              groupItem.prices[price.month - 1] = price.price
             })
 
-            return tunedItem
+            item.records.forEach((record) => {
+              const month = record.month - 1
+              const total = monthlyTotal[month]
+
+              const balance = record.quantity * groupItem.prices[month]
+
+              groupItem.balances[month] += balance
+              total.set('total', (total.get('total') || 0) + balance)
+              total.set(group.name, (total.get(group.name) || 0) + balance)
+            })
+
+            return groupItem
           })
 
-          return { ...group, items: tunedItems }
+          return { ...group, items: groupItems }
         })
 
       setGroups(groups)
@@ -90,7 +105,7 @@ function RatioTable() {
   return <div>RatioTable</div>
 }
 
-function GroupColumn({ group }: { group: Group }) {
+function GroupColumn({ group }: { group: ProcessedGroup }) {
   return (
     <div>
       <div className="bg-gray-200 font-bold text-center">{group.name}</div>

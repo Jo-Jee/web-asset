@@ -1,6 +1,6 @@
-export interface Record {
+export interface Price {
   id: number
-  quantity: number
+  price: number
   year: number
   month: number
 }
